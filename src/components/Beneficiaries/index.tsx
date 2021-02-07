@@ -7,7 +7,6 @@ import {
     beneficiariesDelete,
     Beneficiary,
     BeneficiaryBank,
-    MemberLevels,
     memberLevelsFetch,
     selectBeneficiaries,
     selectBeneficiariesActivateSuccess,
@@ -17,10 +16,7 @@ import {
     selectMobileDeviceState,
     selectUserInfo,
     sendError,
-    User,
 } from '../../modules';
-import { CommonError} from '../../modules/types';
-import { useToggle, usePrevious } from '../../hooks';
 import { ChevronIcon } from '../../assets/images/ChevronIcon';
 import { PlusIcon } from '../../assets/images/PlusIcon';
 import { TipIcon } from '../../assets/images/TipIcon';
@@ -50,11 +46,11 @@ type Props = OwnProps;
 
 const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
     const [currentWithdrawalBeneficiary, setWithdrawalBeneficiary] = React.useState(defaultBeneficiary);
-    const [isOpenAddressModal, toggleAddressModal] = useToggle(false);
-    const [isOpenConfirmationModal, toggleConfirmationModal] = useToggle(false);
-    const [isOpenFailModal, toggleFailModal] = useToggle(false);
-    const [isOpenTip, toggleTip] = useToggle(false);
-    const [isOpenDropdown, toggleDropdown] = useToggle(false);
+    const [isOpenAddressModal, setAddressModalState] = React.useState(false);
+    const [isOpenConfirmationModal, setConfirmationModalState] = React.useState(false);
+    const [isOpenFailModal, setFailModalState] = React.useState(false);
+    const [isOpenTip, setTipState] = React.useState(false);
+    const [isOpenDropdown, toggleDropdown] = React.useState(false);
 
     const { currency, type, onChangeValue } = props;
 
@@ -65,7 +61,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
     const beneficiaries = useSelector(selectBeneficiaries);
     const beneficiariesAddData = useSelector(selectBeneficiariesCreate);
     const beneficiariesAddSuccess = useSelector(selectBeneficiariesCreateSuccess);
-    const beneficiariesActivateSuccess = useSelector(selectBeneficiariesCreateSuccess);
+    const beneficiariesActivateSuccess = useSelector(selectBeneficiariesActivateSuccess);
     const memberLevels = useSelector(selectMemberLevels);
     const userData = useSelector(selectUserInfo);
     const isMobileDevice = useSelector(selectMobileDeviceState);
@@ -81,26 +77,24 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
         }
     }, []);
 
-    const prevCurrency = usePrevious(currency);
-    const prevBeneficiaries = usePrevious(beneficiaries);
-    const prevBeneficiariesAddSuccess = usePrevious(beneficiariesAddSuccess);
-    const prevBenefiariesActivateSuccess = usePrevious(beneficiariesActivateSuccess);
-
     React.useEffect(() => {
-        if ((props.currency && prevCurrency !== props.currency)
-            || (beneficiaries.length && beneficiaries !== prevBeneficiaries)) {
+        if (beneficiaries || currency) {
             handleSetCurrentAddressOnUpdate(beneficiaries);
         }
+    }, [currency, beneficiaries]);
 
-        if (!prevBeneficiariesAddSuccess && beneficiariesAddSuccess) {
-            toggleAddressModal();
-            toggleConfirmationModal();
+    React.useEffect(() => {
+        if (beneficiariesAddSuccess) {
+            setAddressModalState(false);
+            setConfirmationModalState(true);
         }
+    }, [beneficiariesAddSuccess]);
 
-        if (!prevBenefiariesActivateSuccess && beneficiariesActivateSuccess) {
-            toggleConfirmationModal();
+    React.useEffect(() => {
+        if (beneficiariesActivateSuccess) {
+            setConfirmationModalState(false);
         }
-    }, [beneficiariesAddSuccess, currency, prevBeneficiariesAddSuccess, prevBenefiariesActivateSuccess, beneficiariesActivateSuccess]);
+    }, [beneficiariesActivateSuccess]);
 
     const handleDeleteAddress = React.useCallback((item: Beneficiary) => () => {
         dispatch(beneficiariesDelete({ id: item.id }));
@@ -109,7 +103,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
     const handleClickSelectAddress = React.useCallback((item: Beneficiary) => () => {
         if (item.state && item.state.toLowerCase() === 'pending') {
             dispatch(beneficiariesCreateData(item));
-            toggleConfirmationModal();
+            setConfirmationModalState(true);
         } else {
             handleSetCurrentAddress(item);
         }
@@ -118,7 +112,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
     const handleSetCurrentAddress = React.useCallback((item: Beneficiary) => {
         if (item.data) {
             setWithdrawalBeneficiary(item);
-            toggleDropdown();
+            toggleDropdown(!isOpenDropdown);
             onChangeValue(item);
         }
     }, []);
@@ -133,14 +127,14 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
 
     const handleClickToggleAddAddressModal = React.useCallback(() => () => {
         if (memberLevels && (userData.level < memberLevels.withdraw.minimum_level)) {
-            toggleFailModal();
+            setFailModalState(true);
         } else if (beneficiaries && beneficiaries.length >= 10) {
             dispatch(sendError({
                 error: { message: ['error.beneficiaries.max10.addresses'] },
                 processingType: 'alert',
             }));
         } else {
-            toggleAddressModal();
+            setAddressModalState(true);
         }
     }, [beneficiaries]);
 
@@ -256,7 +250,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
         if (type === 'fiat') {
             return (
                 <div className={dropdownClassName}>
-                    <div className="pg-beneficiaries__dropdown__select fiat-select select" onClick={toggleDropdown}>
+                    <div className="pg-beneficiaries__dropdown__select fiat-select select" onClick={e => toggleDropdown(!isOpenDropdown)}>
                         <div className="select__left">
                             <span className="select__left__title">{formatMessage({ id: 'page.body.wallets.beneficiaries.dropdown.fiat.name' })}</span>
                             <span className="select__left__address">{currentWithdrawalBeneficiary.name}</span>
@@ -267,7 +261,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
                             {isPending ? (
                                 <span className="select__right__pending">{formatMessage({ id: 'page.body.wallets.beneficiaries.dropdown.pending' })}</span>
                             ) : null}
-                            <span className="select__right__tip" onMouseOver={toggleTip} onMouseOut={toggleTip}><TipIcon/></span>
+                            <span className="select__right__tip" onMouseOver={() => setTipState(true)} onMouseOut={() => setTipState(false)}><TipIcon/></span>
                             <span className="select__right__select">{formatMessage({ id: 'page.body.wallets.beneficiaries.dropdown.select' })}</span>
                             <span className="select__right__chevron"><ChevronIcon /></span>
                         </div>
@@ -280,7 +274,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
 
         return (
             <div className={dropdownClassName}>
-                <div className="pg-beneficiaries__dropdown__select select" onClick={toggleDropdown}>
+                <div className="pg-beneficiaries__dropdown__select select" onClick={() => toggleDropdown(!isOpenDropdown)}>
                     <div className="select__left">
                         <span className="select__left__title">
                             {formatMessage({ id: 'page.body.wallets.beneficiaries.dropdown.name' })}
@@ -297,7 +291,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
                                 {formatMessage({ id: 'page.body.wallets.beneficiaries.dropdown.pending' })}
                             </span>
                         ) : null}
-                        <span className="select__right__tip" onMouseOver={toggleTip} onMouseOut={toggleTip}>
+                        <span className="select__right__tip" onMouseOver={() => setTipState(true)} onMouseOut={() => setTipState(false)}>
                             <TipIcon/>
                         </span>
                         <span className="select__right__select">
@@ -398,7 +392,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
             <BeneficiariesAddModal
                 currency={currency}
                 type={type}
-                handleToggleAddAddressModal={toggleAddressModal}
+                handleToggleAddAddressModal={() => setAddressModalState(false)}
             />
         );
     }, [currency, type]);
@@ -407,7 +401,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
         return (
             <BeneficiariesActivateModal
                 beneficiariesAddData={beneficiariesAddData}
-                handleToggleConfirmationModal={toggleConfirmationModal}
+                handleToggleConfirmationModal={() => setConfirmationModalState(false)}
             />
         );
     }, []);
@@ -416,7 +410,7 @@ const BeneficiariesComponent: React.FC<Props> = (props: Props) => {
         return (
             <BeneficiariesFailAddModal
                 isMobileDevice={isMobileDevice}
-                handleToggleFailModal={toggleFailModal}
+                handleToggleFailModal={() => setFailModalState(false)}
             />
         );
     }, []);

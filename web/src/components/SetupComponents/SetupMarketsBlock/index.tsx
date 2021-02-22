@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Button } from 'react-bootstrap';
 import { MarketItem, MarketUpdateItem } from 'src/modules';
-
 import { ArrowAllLeftIcon } from '../../../assets/images/setup/ArrowAllLeftIcon';
 import { ArrowAllRightIcon } from '../../../assets/images/setup/ArrowAllRightIcon';
 import { ArrowLeftIcon } from '../../../assets/images/setup/ArrowLeftIcon';

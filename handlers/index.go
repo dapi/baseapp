@@ -94,10 +94,10 @@ func index(ctx *gin.Context) {
 	}
 
 	ctx.HTML(http.StatusOK, "index", gin.H{
-		"title":    "Index title!",
+		"title":    "Cryptobase",
 		"cssFiles": cssFiles,
 		"jsFiles":  jsFiles,
-		"data":     "test",
+		"data":     "",
 		"rootID":   "root",
 		"add": func(a int, b int) int {
 			return a + b

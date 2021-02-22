@@ -1,18 +1,5 @@
-{{define "head"}}
-    <head>
-    </head>
-    <style>
-        .home { color: blue;}
-    </style>
-{{end}}
-
-
 {{define "content"}}
     <body>
         {{ .data }}
-        <h1 class="home">Homepage</h1>
-        <p>42 + 142 = {{call $.add 42 142}}</p>
-        <hr>
-        <p><a href="/page">Page render</a></p>
     </body>
 {{end}}

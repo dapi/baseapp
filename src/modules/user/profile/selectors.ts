@@ -16,6 +16,7 @@ export const selectTwoFactorAuthSuccess = (state: RootState): boolean | undefine
 export const selectUserLoggedIn = (state: RootState): boolean => {
     const { user: { profile } } = state;
 
+  // debugger
     return !profile.userData.isFetching && profile.userData.user.state === 'active';
 };
 
